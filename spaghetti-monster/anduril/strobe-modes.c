@@ -23,6 +23,23 @@
 #include "strobe-modes.h"
 
 #ifdef USE_STROBE_STATE
+
+#ifdef USE_TINT_RAMPING
+// for accessing tint
+#include "fsm-ramping.h"
+// the tint will be changed in some cases here. This is for restoring the original tint
+uint8_t saved_tint = 128;
+uint8_t tint_strobe_mode = 0; // tint alternate in party/tactical strobe
+#endif
+
+// restore tint to the original tint when changing or exiting strobe mode
+static inline void restore_tint() {
+    #ifdef USE_TINT_RAMPING
+    tint = saved_tint;
+    tint_strobe_mode = 0;
+    #endif
+}
+
 uint8_t strobe_state(Event event, uint16_t arg) {
     static int8_t ramp_direction = 1;
 
@@ -44,22 +61,29 @@ uint8_t strobe_state(Event event, uint16_t arg) {
     if (0) {}  // placeholder
     // init anything which needs to be initialized
     else if (event == EV_enter_state) {
+        #ifdef USE_TINT_RAMPING
+        saved_tint = tint;
+        #endif
+
         ramp_direction = 1;
         return MISCHIEF_MANAGED;
     }
     // 1 click: off
     else if (event == EV_1click) {
+        restore_tint();
         set_state(off_state, 0);
         return MISCHIEF_MANAGED;
     }
     // 2 clicks: rotate through strobe/flasher modes
     else if (event == EV_2clicks) {
+        restore_tint();
         strobe_type = (st + 1) % NUM_STROBES;
         save_config();
         return MISCHIEF_MANAGED;
     }
     // 4 clicks: rotate backward through strobe/flasher modes
     else if (event == EV_4clicks) {
+        restore_tint();
         strobe_type = (st - 1 + NUM_STROBES) % NUM_STROBES;
         save_config();
         return MISCHIEF_MANAGED;
@@ -147,6 +171,22 @@ uint8_t strobe_state(Event event, uint16_t arg) {
         save_config();
         return MISCHIEF_MANAGED;
     }
+
+    #if defined(USE_TINT_RAMPING) && (defined(USE_TACTICAL_STROBE_MODE) || defined(USE_PARTY_STROBE_MODE))
+    // 3 clicks change between fixed tint or alternating tint in party/tactical strobe
+    else if (event == EV_3clicks) {
+        #if (defined(USE_TACTICAL_STROBE_MODE) && defined(USE_PARTY_STROBE_MODE))
+        if(st == tactical_strobe_e || st == party_strobe_e) {
+        #elif defined(USE_TACTICAL_STROBE_MODE)
+        if(st == tactical_strobe_e) {
+        #elif defined(USE_PARTY_STROBE_MODE)
+        if(st == party_strobe_e) {
+        #endif
+            tint_strobe_mode = !tint_strobe_mode;
+        }
+    }
+    #endif
+
     #ifdef USE_MOMENTARY_MODE
     // 5 clicks: go to momentary mode (momentary strobe)
     else if (event == EV_5clicks) {
@@ -203,8 +243,19 @@ inline void strobe_state_iter() {
 inline void party_tactical_strobe_mode_iter(uint8_t st) {
     // one iteration of main loop()
     uint8_t del = strobe_delays[st];
-    // TODO: make tac strobe brightness configurable?
-    set_level(STROBE_BRIGHTNESS);
+
+    #ifdef USE_TINT_RAMPING
+    if(tint_strobe_mode == 1) {
+        // alternate tint each cycle, force tint to be 1 or 254
+        tint = (tint == 1) ? 254 : 1; 
+        set_level(RAMP_SIZE-20); // need to limit brightness to 130 instead of using turbo
+    } else {
+        set_level(STROBE_BRIGHTNESS);
+    }
+    #else
+        set_level(STROBE_BRIGHTNESS);
+    #endif
+    
     if (0) {}  // placeholde0
     #ifdef USE_PARTY_STROBE_MODE
     else if (st == party_strobe_e) {  // party strobe
