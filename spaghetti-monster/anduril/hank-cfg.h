@@ -18,4 +18,10 @@
 // double click while on goes to full-power turbo, not ramp ceiling
 #define DEFAULT_2C_STYLE 1
 
+// tint ramp speed default 1; suggested to not go above 4
+#define TINT_SPEED 2
+
+// blip mid tint ramp
+#define BLINK_AT_TINTRAMP_MIDDLE
+
 #endif  // ifndef HANK_CFG

@@ -60,11 +60,41 @@ uint8_t tint_ramping_state(Event event, uint16_t arg) {
 
         // change normal tints
         if ((tint_ramp_direction > 0) && (tint < 254)) {
+            #ifdef TINT_SPEED
+            // precondition test for rollover
+            if(254-TINT_SPEED < tint)
+                tint = 254;
+            else
+                tint += TINT_SPEED;
+            #else
             tint += 1;
+            #endif
         }
         else if ((tint_ramp_direction < 0) && (tint > 1)) {
+            #ifdef TINT_SPEED
+            // precondition test for rollover
+            if(tint<=TINT_SPEED)
+                tint = 1;
+            else
+                tint -= TINT_SPEED;
+            #else
             tint -= 1;
+            #endif
         }
+        #ifdef BLINK_AT_TINTRAMP_MIDDLE
+            #ifdef TINT_SPEED
+            if((tint_ramp_direction > 0 && (tint-TINT_SPEED < 127 && tint+TINT_SPEED > 127))
+            || (tint_ramp_direction < 0 && (tint+TINT_SPEED > 127 && tint-TINT_SPEED < 127))) {
+                blip();
+                nice_delay_ms(50);
+            }
+            #else
+            if(tint == 127) {
+                blip();
+                nice_delay_ms(50);
+            }
+            #endif
+        #endif
         // if the user kept pressing long enough, go the final step
         if (past_edge_counter == 64) {
             past_edge_counter ++;
