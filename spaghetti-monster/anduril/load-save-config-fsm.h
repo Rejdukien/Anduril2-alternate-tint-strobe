@@ -100,6 +100,9 @@ typedef enum {
     tactical_lvl_2_e,
     tactical_lvl_3_e,
     #endif
+    #ifdef USE_RAMP_START_MODE
+    ramp_start_mode_e,
+    #endif
     eeprom_indexes_e_END
 } eeprom_indexes_e;
 #define EEPROM_BYTES eeprom_indexes_e_END

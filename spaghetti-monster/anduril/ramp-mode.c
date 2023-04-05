@@ -26,6 +26,10 @@
 #include "sunset-timer.h"
 #endif
 
+#ifdef USE_RAMP_START_MODE
+#include "startup_mode.h"
+#endif
+
 uint8_t steady_state(Event event, uint16_t arg) {
     static int8_t ramp_direction = 1;
     #if (B_TIMING_OFF == B_RELEASE_T)
@@ -304,6 +308,10 @@ uint8_t steady_state(Event event, uint16_t arg) {
             }
         }
         #endif  // ifdef USE_SET_LEVEL_GRADUALLY
+
+        #ifdef USE_RAMP_START_MODE
+        ramp_up_tick();
+        #endif
         return MISCHIEF_MANAGED;
     }
 
@@ -573,6 +581,9 @@ void globals_config_save(uint8_t step, uint8_t value) {
     #endif
     #ifdef USE_JUMP_START
     else if (step == 1+jump_start_config_step) { jump_start_level = value; }
+    #endif
+    #ifdef USE_RAMP_START_MODE
+    else if (step == 1+ramp_start_mode_config_step) { ramp_start_mode = value; }
     #endif
 }
 

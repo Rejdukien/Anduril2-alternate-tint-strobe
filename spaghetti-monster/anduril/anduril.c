@@ -1,3 +1,4 @@
+
 /*
  * Anduril: Narsil-inspired UI for SpaghettiMonster.
  * (Anduril is Aragorn's sword, the blade Narsil reforged)
@@ -211,6 +212,10 @@
 
 #ifdef USE_SOS_MODE
 #include "sos-mode.c"
+#endif
+
+#ifdef USE_RAMP_START_MODE
+#include "startup_mode.c"
 #endif
 
 
